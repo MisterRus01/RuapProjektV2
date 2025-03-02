@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books Price Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-image: url("{{ url_for('static', filename='photo.jpg') }}");
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .content-container {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        h2,
+        h3 {
+            color: #333;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        input,
+        select {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            word-wrap: break-word;
+        }
+
+        .github-logo {
+            display: block;
+            margin: 0 auto 20px;
+            width: 60px;
+            height: 60px;
+        }
+
+        .github-logo {
+            position: fixed;
+            top: 0;
+            right: 0;
+            padding: 20px;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 0 0 0 15px;
+            padding: 10px;
+        }
+
+        .github-logo img {
+            width: 40px;
+            height: 40px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            filter: brightness(0) invert(1);
+            filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.5));
+        }
+
+        .github-logo img:hover {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+            box-shadow: 0 0 10px rgba(128, 128, 128, 0.5);
+        }
+
+        img {
+            display: none;
+            margin-top: 20px;
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="content-container">
+        <a href="https://github.com/Filip746/FlaskAzureApp/tree/master" target="_blank" rel="noopener noreferrer">
+            <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png" alt="GitHub Repository" class="github-logo">
+        </a>
+        <h1>Charts Display</h1>
+        <div class="button-container">
+            <button onclick="showChart('chart1')">Graf distribucije korisničkih ocjena</button>
+            <button onclick="showChart('chart2')">Distribucija broja knjiga po žanru</button>
+            <button onclick="showChart('chart3')">Distribucija ocjena knjiga po žanru</button>
+        </div>
+
+        <img id="chart1" src="static/photo1.png" alt="Prikaži graf distribucije korisničkih ocjena">
+        <img id="chart2" src="static/photo2.png" alt="Prikaži distribuciju broja knjiga po žanru">
+        <img id="chart3" src="static/photo3.png" alt="Prikaži distribuciju ocjena knjiga po žanru">
+
+        <h2>Enter Data for Prediction</h2>
+        <form id="predict-form">
+            <input type="number" id="user-rating" placeholder="User Rating (1-5)" step="0.1" required min="1" max="5">
+            <p class="error-message" id="user-rating-error">User rating must be between 1 and 5.</p>
+
+            <input type="number" id="reviews" placeholder="Reviews" required><br>
+
+            <input type="number" id="year" placeholder="Year (2009-2025)" required min="2009" max="2025">
+            <p class="error-message" id="year-error">Year must be between 2009 and 2025.</p>
+
+            <select id="genre" required>
+                <option value="" disabled selected>Select Genre</option>
+                <option value="Non Fiction">Non Fiction</option>
+                <option value="Fiction">Fiction</option>
+            </select><br>
+            <button type="button" onclick="sendPrediction()">Predict</button>
+        </form>
+        <h3>Prediction Result:</h3>
+        <p id="result"></p>
+    </div>
+
+    <script>
+        function showChart(chartId) {
+            const charts = document.querySelectorAll('img');
+            charts.forEach(chart => chart.style.display = 'none');
+
+            const selectedChart = document.getElementById(chartId);
+            if (selectedChart) {
+                selectedChart.style.display = 'block';
+            }
+        }
+        function validateInputs() {
+            let isValid = true;
+
+            // Validate User Rating
+            let userRating = parseFloat(document.getElementById("user-rating").value);
+            let userRatingError = document.getElementById("user-rating-error");
+            if (isNaN(userRating) || userRating < 1 || userRating > 5) {
+                userRatingError.style.display = "block";
+                isValid = false;
+            } else {
+                userRatingError.style.display = "none";
+            }
+
+            // Validate Year
+            let year = parseInt(document.getElementById("year").value);
+            let yearError = document.getElementById("year-error");
+            if (isNaN(year) || year < 2009 || year > 2025) {
+                yearError.style.display = "block";
+                isValid = false;
+            } else {
+                yearError.style.display = "none";
+            }
+
+            return isValid;
+        }
+
+        function sendPrediction() {
+            if (!validateInputs()) {
+                return; // Stop execution if inputs are invalid
+            }
+
+            let inputData = {
+                "Name": null,
+                "Author": null,
+                "User Rating": parseFloat(document.getElementById("user-rating").value),
+                "Reviews": parseInt(document.getElementById("reviews").value),
+                "Price": 0,
+                "Year": parseInt(document.getElementById("year").value),
+                "Genre": document.getElementById("genre").value
+            };
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(inputData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    let price = parseFloat(data["Scored Labels"]).toFixed(2);
+
+                    // Validate price range
+                    if (price < 2 || price > 105) {
+                        document.getElementById("result").innerHTML = `<span class="result-error">Error: Uneseni podatci nisu smisleni.</span>`;
+                    } else {
+                        document.getElementById("result").innerText = `$${price}`;
+                    }
+
+                    console.log("Formatted price:", `$${price}`);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById("result").innerHTML = `<span class="result-error">Error: Could not fetch prediction.</span>`;
+                });
+        }
+    </script>
+</body>
+
+</html>
